@@ -51,9 +51,9 @@ async function addBlockRule(addressList, durationSeconds) {
     await mikrotikRequest(`/ip/firewall/filter/${existing[".id"]}`, "DELETE");
   }
 
-  // Format durasi untuk RouterOS (misal: 5m, 15m)
+  // Format durasi untuk RouterOS v7: "5m" atau "15m"
   const minutes = Math.floor(durationSeconds / 60);
-  const timeout = `00:${String(minutes).padStart(2, "0")}:00`;
+  const timeout = `${minutes}m`;
 
   // Tambah rule baru dengan timeout
   await mikrotikRequest("/ip/firewall/filter/add", "POST", {
