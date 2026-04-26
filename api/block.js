@@ -44,11 +44,10 @@ async function deleteIfExists(endpoint, nameField, nameValue) {
 // Ambil waktu saat ini dari Mikrotik
 async function getMikrotikTime() {
   const clock = await mikrotikRequest("/system/clock");
-  // clock.time format: "HH:MM:SS"
-  return clock.time;
+  return clock.time; // format: "HH:MM:SS"
 }
 
-// Tambah durasi ke waktu HH:MM:SS, hasilkan HH:MM:SS
+// Tambah detik ke waktu HH:MM:SS
 function addSeconds(timeStr, seconds) {
   const [h, m, s] = timeStr.split(":").map(Number);
   const total = h * 3600 + m * 60 + s + seconds;
@@ -71,7 +70,7 @@ async function addBlockRule(addressList, durationSeconds) {
   await deleteIfExists("/system/scheduler", "name", schedName);
 
   // 3. Tambah rule DROP
-  await mikrotikRequest("/ip/firewall/filter/add", "POST", {
+  const newRule = await mikrotikRequest("/ip/firewall/filter/add", "POST", {
     chain: "forward",
     action: "drop",
     "src-address-list": addressList,
@@ -79,12 +78,26 @@ async function addBlockRule(addressList, durationSeconds) {
     disabled: "false",
   });
 
-  // 4. Ambil waktu Mikrotik sekarang, hitung waktu unblock
+  // 4. Pindahkan rule ke posisi paling atas (index 0)
+  // newRule mengandung .id dari rule yang baru dibuat
+  try {
+    const ruleId = typeof newRule === "object" ? newRule[".id"] ?? newRule.id ?? newRule.ret : newRule;
+    if (ruleId) {
+      await mikrotikRequest("/ip/firewall/filter/move", "POST", {
+        ".id": ruleId,
+        destination: "0",
+      });
+    }
+  } catch (e) {
+    console.log("Gagal move rule ke atas:", e.message);
+    // Lanjut meski gagal move, rule tetap aktif
+  }
+
+  // 5. Ambil waktu Mikrotik sekarang, hitung waktu unblock
   const currentTime = await getMikrotikTime();
   const startTime = addSeconds(currentTime, durationSeconds);
 
-  // 5. Buat scheduler: jalankan SEKALI pada jam startTime
-  // count=1 = hanya jalan sekali lalu hapus dirinya sendiri
+  // 6. Buat scheduler: jalankan SEKALI pada jam startTime
   const unblockScript =
     `/ip firewall filter remove [find comment="${comment}"]` +
     `\n/system scheduler remove [find name="${schedName}"]`;
