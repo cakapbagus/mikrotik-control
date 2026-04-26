@@ -1,22 +1,38 @@
 // api/status.js - Cek status blokir yang sedang aktif
 
-const MIKROTIK_IP = process.env.MIKROTIK_IP || "38.225.121.13";
-const MIKROTIK_PORT = process.env.MIKROTIK_PORT || "8080";
-const MIKROTIK_USER = process.env.MIKROTIK_USER || "admin";
-const MIKROTIK_PASS = process.env.MIKROTIK_PASS || "";
+function getEnv(name, fallback = "") {
+  const value = process.env[name];
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed === "" ? fallback : trimmed;
+}
 
-const BASE_URL = `http://${MIKROTIK_IP}:${MIKROTIK_PORT}/rest`;
+const MIKROTIK_IP = getEnv("MIKROTIK_IP", "38.225.121.13");
+const MIKROTIK_PORT = getEnv("MIKROTIK_PORT", "8080");
+const MIKROTIK_USER = getEnv("MIKROTIK_USER", "admin");
+const MIKROTIK_PASS = getEnv("MIKROTIK_PASS", "");
+const MIKROTIK_SCHEME = getEnv("MIKROTIK_SCHEME", "http");
+
+const BASE_URL = `${MIKROTIK_SCHEME}://${MIKROTIK_IP}:${MIKROTIK_PORT}/rest`;
 
 async function mikrotikRequest(path) {
   const credentials = Buffer.from(`${MIKROTIK_USER}:${MIKROTIK_PASS}`).toString("base64");
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/json",
-    },
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (err) {
+    throw new Error(`Tidak bisa terhubung ke Mikrotik (${BASE_URL}): ${err.message}`);
+  }
 
-  if (!res.ok) throw new Error(`Mikrotik error ${res.status}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Mikrotik error ${res.status}: ${text || "Tanpa detail error"}`);
+  }
   const text = await res.text();
   return text ? JSON.parse(text) : [];
 }
