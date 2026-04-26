@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kontrol Internet Sekolah</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --accent: #00e5a0;
+      --accent-dim: rgba(0, 229, 160, 0.12);
+      --danger: #ff4560;
+      --danger-dim: rgba(255, 69, 96, 0.12);
+      --warn: #ffb800;
+      --warn-dim: rgba(255, 184, 0, 0.1);
+      --text: #e8e8f0;
+      --muted: #555570;
+      --card-10: #1a1a2e;
+      --card-11: #1a1e2e;
+      --card-12: #1e1a2e;
+      --card-all: #1e2028;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* HEADER */
+    header {
+      margin-bottom: 48px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0,229,160,0.3);
+      color: var(--accent);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 2px;
+      margin-bottom: 16px;
+    }
+
+    .badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+    }
+
+    /* LOGIN GATE */
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 60px;
+    }
+
+    #login-screen p {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .key-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      padding: 12px 16px;
+      width: 280px;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .key-input:focus { border-color: var(--accent); }
+
+    .login-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      padding: 12px 24px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: opacity 0.2s;
+      width: 280px;
+    }
+
+    .login-btn:hover { opacity: 0.85; }
+
+    /* MAIN DASHBOARD */
+    #dashboard { display: none; }
+
+    /* STATUS BAR */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 6px;
+      margin-bottom: 32px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .status-bar .conn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .status-dot.ok { background: var(--accent); }
+    .status-dot.err { background: var(--danger); }
+
+    /* CARDS GRID */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .card.blocked {
+      border-color: var(--danger);
+      box-shadow: 0 0 20px rgba(255, 69, 96, 0.1);
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .card-subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+      letter-spacing: 0.05em;
+    }
+
+    .status-pill {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 2px;
+      font-weight: 700;
+    }
+
+    .status-pill.online {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,229,160,0.3);
+    }
+
+    .status-pill.offline {
+      background: var(--danger-dim);
+      color: var(--danger);
+      border: 1px solid rgba(255,69,96,0.3);
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .card-body {
+      padding: 16px 20px;
+    }
+
+    .timer-display {
+      font-size: 11px;
+      color: var(--warn);
+      margin-bottom: 12px;
+      min-height: 16px;
+      letter-spacing: 0.05em;
+    }
+
+    .timer-display:empty { display: none; }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-block {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 10px 8px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-block:hover {
+      background: var(--danger-dim);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .btn-block:active { transform: scale(0.97); }
+
+    .btn-block.btn-5:hover { }
+    .btn-block.btn-15:hover { }
+
+    .btn-unblock {
+      grid-column: 1 / -1;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: 8px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-unblock:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* TOAST */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      max-width: 300px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success { border-color: var(--accent); color: var(--accent); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+
+    /* LOADING OVERLAY */
+    .loading {
+      position: relative;
+      pointer-events: none;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(10,10,15,0.5);
+      border-radius: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="badge">Network Admin Panel</div>
+    <h1>KONTROL <span>INTERNET</span><br>SEKOLAH</h1>
+    <p class="subtitle">Mikrotik RouterOS v7 · REST API</p>
+  </header>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <p>Masukkan Admin Key untuk mengakses panel</p>
+    <input type="password" class="key-input" id="admin-key-input" placeholder="Admin Key..." />
+    <button class="login-btn" onclick="doLogin()">MASUK →</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="status-bar">
+      <div class="conn">
+        <div class="status-dot" id="conn-dot"></div>
+        <span id="conn-text">Menghubungkan...</span>
+      </div>
+      <span id="last-refresh">—</span>
+    </div>
+
+    <div class="cards-grid" id="cards-grid"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  const ADDRESS_LISTS = [
+    { id: "ALL-SISWA",    label: "Semua Siswa",  desc: "Seluruh perangkat siswa" },
+    { id: "ALL-SISWA-10", label: "Kelas 10",     desc: "Siswa kelas X" },
+    { id: "ALL-SISWA-11", label: "Kelas 11",     desc: "Siswa kelas XI" },
+    { id: "ALL-SISWA-12", label: "Kelas 12",     desc: "Siswa kelas XII" },
+  ];
+
+  let adminKey = "";
+  let statusInterval = null;
+
+  // ─── LOGIN ────────────────────────────────────────────────
+  document.getElementById("admin-key-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doLogin();
+  });
+
+  function doLogin() {
+    const val = document.getElementById("admin-key-input").value.trim();
+    if (!val) { showToast("Masukkan admin key dulu", "error"); return; }
+    adminKey = val;
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    buildCards();
+    refreshStatus();
+    statusInterval = setInterval(refreshStatus, 10000);
+  }
+
+  // ─── BUILD CARDS ──────────────────────────────────────────
+  function buildCards() {
+    const grid = document.getElementById("cards-grid");
+    grid.innerHTML = "";
+
+    ADDRESS_LISTS.forEach(({ id, label, desc }) => {
+      const safeId = id.replace(/[^a-z0-9]/gi, "_");
+      grid.innerHTML += `
+        <div class="card" id="card-${safeId}">
+          <div class="card-header">
+            <div>
+              <div class="card-title">${label}</div>
+              <div class="card-subtitle">${id} · ${desc}</div>
+            </div>
+            <div class="status-pill online" id="pill-${safeId}">ONLINE</div>
+          </div>
+          <div class="card-body">
+            <div class="timer-display" id="timer-${safeId}"></div>
+            <div class="btn-row">
+              <button class="btn-block btn-5" onclick="blockInternet('${id}', 300)">
+                ⏸ MATIKAN 5 MENIT
+              </button>
+              <button class="btn-block btn-15" onclick="blockInternet('${id}', 900)">
+                ⏸ MATIKAN 15 MENIT
+              </button>
+              <button class="btn-unblock" onclick="unblockInternet('${id}')">
+                ▶ NYALAKAN KEMBALI
+              </button>
+            </div>
+          </div>
+        </div>`;
+    });
+  }
+
+  // ─── API CALLS ────────────────────────────────────────────
+  async function apiCall(endpoint, method = "GET", body = null) {
+    const opts = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Key": adminKey,
+      },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(`/api/${endpoint}`, opts);
+    return res.json();
+  }
+
+  async function blockInternet(addressList, duration) {
+    const safeId = addressList.replace(/[^a-z0-9]/gi, "_");
+    const card = document.getElementById(`card-${safeId}`);
+    card.classList.add("loading");
+
+    try {
+      const data = await apiCall("block", "POST", { addressList, duration });
+      if (data.success) {
+        showToast(`✓ ${data.message}`, "success");
+        refreshStatus();
+      } else {
+        showToast(`✗ ${data.error}`, "error");
+      }
+    } catch (e) {
+      showToast("Gagal terhubung ke server", "error");
+    } finally {
+      card.classList.remove("loading");
+    }
+  }
+
+  async function unblockInternet(addressList) {
+    const safeId = addressList.replace(/[^a-z0-9]/gi, "_");
+    const card = document.getElementById(`card-${safeId}`);
+    card.classList.add("loading");
+
+    try {
+      const data = await apiCall("unblock", "POST", { addressList });
+      if (data.success) {
+        showToast(`✓ ${data.message}`, "success");
+        refreshStatus();
+      } else {
+        showToast(`✗ ${data.error}`, "error");
+      }
+    } catch (e) {
+      showToast("Gagal terhubung ke server", "error");
+    } finally {
+      card.classList.remove("loading");
+    }
+  }
+
+  async function refreshStatus() {
+    try {
+      const data = await apiCall("status");
+      const dot = document.getElementById("conn-dot");
+      const txt = document.getElementById("conn-text");
+
+      if (data.success) {
+        dot.className = "status-dot ok";
+        txt.textContent = "Terhubung ke Mikrotik";
+        document.getElementById("last-refresh").textContent =
+          "Update: " + new Date().toLocaleTimeString("id-ID");
+
+        ADDRESS_LISTS.forEach(({ id }) => {
+          const safeId = id.replace(/[^a-z0-9]/gi, "_");
+          const s = data.status[id];
+          const card = document.getElementById(`card-${safeId}`);
+          const pill = document.getElementById(`pill-${safeId}`);
+          const timer = document.getElementById(`timer-${safeId}`);
+
+          if (s?.blocked) {
+            card.classList.add("blocked");
+            pill.className = "status-pill offline";
+            pill.textContent = "OFFLINE";
+            timer.textContent = s.timeoutRemaining
+              ? `⏱ Sisa: ${formatTimeout(s.timeoutRemaining)}`
+              : "⏱ Sedang diblokir";
+          } else {
+            card.classList.remove("blocked");
+            pill.className = "status-pill online";
+            pill.textContent = "ONLINE";
+            timer.textContent = "";
+          }
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e) {
+      document.getElementById("conn-dot").className = "status-dot err";
+      document.getElementById("conn-text").textContent = "Gagal terhubung ke Mikrotik";
+    }
+  }
+
+  function formatTimeout(t) {
+    // t format: "HH:MM:SS"
+    if (!t) return "";
+    const parts = t.split(":");
+    if (parts.length === 3) {
+      const h = parseInt(parts[0]);
+      const m = parseInt(parts[1]);
+      const s = parseInt(parts[2]);
+      if (h > 0) return `${h}j ${m}m ${s}d`;
+      if (m > 0) return `${m} menit ${s} detik`;
+      return `${s} detik`;
+    }
+    return t;
+  }
+
+  // ─── TOAST ────────────────────────────────────────────────
+  function showToast(msg, type = "success") {
+    const container = document.getElementById("toast-container");
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = "slideOut 0.3s ease forwards";
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+</script>
+</body>
+</html>

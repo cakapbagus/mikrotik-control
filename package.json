@@ -1,0 +1,9 @@
+{
+  "name": "mikrotik-internet-control",
+  "version": "1.0.0",
+  "description": "Dashboard kontrol internet sekolah via Mikrotik REST API",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
