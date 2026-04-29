@@ -5,24 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kontrol Internet Sekolah</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --border: #1e1e2e;
-      --accent: #00e5a0;
-      --accent-dim: rgba(0, 229, 160, 0.12);
-      --danger: #ff4560;
-      --danger-dim: rgba(255, 69, 96, 0.12);
-      --warn: #ffb800;
-      --warn-dim: rgba(255, 184, 0, 0.1);
-      --text: #e8e8f0;
-      --muted: #555570;
-      --card-10: #1a1a2e;
-      --card-11: #1a1e2e;
-      --card-12: #1e1a2e;
-      --card-all: #1e2028;
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: #e1e8ed;
+      --accent: #0066cc;
+      --accent-dim: rgba(0, 102, 204, 0.08);
+      --danger: #d32f2f;
+      --danger-dim: rgba(211, 47, 47, 0.08);
+      --warn: #f57c00;
+      --warn-dim: rgba(245, 124, 0, 0.08);
+      --text: #1a1a1a;
+      --muted: #757575;
+      --card-10: #f5f7fa;
+      --card-11: #f5f7fa;
+      --card-12: #f5f7fa;
+      --card-all: #f5f7fa;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,7 +30,7 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Space Mono', monospace;
+      font-family: 'Poppins', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -41,8 +41,8 @@
       position: fixed;
       inset: 0;
       background-image:
-        linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+        linear-gradient(rgba(0,102,204,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,102,204,0.02) 1px, transparent 1px);
       background-size: 40px 40px;
       pointer-events: none;
       z-index: 0;
@@ -51,14 +51,14 @@
     .container {
       position: relative;
       z-index: 1;
-      max-width: 900px;
+      max-width: 1000px;
       margin: 0 auto;
-      padding: 40px 20px;
+      padding: 50px 30px;
     }
 
     /* HEADER */
     header {
-      margin-bottom: 48px;
+      margin-bottom: 60px;
       text-align: center;
     }
 
@@ -67,14 +67,15 @@
       align-items: center;
       gap: 6px;
       background: var(--accent-dim);
-      border: 1px solid rgba(0,229,160,0.3);
+      border: 1px solid rgba(0, 102, 204, 0.3);
       color: var(--accent);
-      font-size: 10px;
-      letter-spacing: 0.2em;
+      font-size: 12px;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      padding: 4px 12px;
-      border-radius: 2px;
-      margin-bottom: 16px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-weight: 600;
     }
 
     .badge::before {
@@ -91,11 +92,12 @@
     }
 
     h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: clamp(28px, 5vw, 48px);
+      font-family: 'Poppins', sans-serif;
+      font-size: clamp(32px, 6vw, 52px);
       font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      color: #1a1a1a;
     }
 
     h1 span {
@@ -103,10 +105,11 @@
     }
 
     .subtitle {
-      margin-top: 8px;
+      margin-top: 12px;
       color: var(--muted);
-      font-size: 12px;
-      letter-spacing: 0.1em;
+      font-size: 14px;
+      letter-spacing: 0.03em;
+      font-weight: 500;
     }
 
     /* LOGIN GATE */
@@ -114,46 +117,54 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-top: 60px;
+      gap: 16px;
+      margin-top: 80px;
     }
 
     #login-screen p {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 16px;
+      font-weight: 500;
     }
 
     .key-input {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       color: var(--text);
-      font-family: 'Space Mono', monospace;
-      font-size: 14px;
-      padding: 12px 16px;
-      width: 280px;
-      border-radius: 4px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      padding: 16px 20px;
+      width: 300px;
+      border-radius: 8px;
       outline: none;
-      transition: border-color 0.2s;
+      transition: all 0.3s;
     }
 
-    .key-input:focus { border-color: var(--accent); }
+    .key-input:focus { 
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
 
     .login-btn {
       background: var(--accent);
-      color: #000;
+      color: #fff;
       border: none;
-      font-family: 'Space Mono', monospace;
+      font-family: 'Poppins', sans-serif;
       font-weight: 700;
-      font-size: 12px;
-      letter-spacing: 0.1em;
-      padding: 12px 24px;
+      font-size: 16px;
+      letter-spacing: 0.05em;
+      padding: 16px 32px;
       cursor: pointer;
-      border-radius: 4px;
-      transition: opacity 0.2s;
-      width: 280px;
+      border-radius: 8px;
+      transition: all 0.3s;
+      width: 300px;
     }
 
-    .login-btn:hover { opacity: 0.85; }
+    .login-btn:hover { 
+      background: #0052a3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.25);
+    }
 
     /* MAIN DASHBOARD */
     #dashboard { display: none; }
@@ -165,50 +176,58 @@
       justify-content: space-between;
       background: var(--surface);
       border: 1px solid var(--border);
-      padding: 10px 16px;
-      border-radius: 6px;
-      margin-bottom: 32px;
-      font-size: 11px;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 40px;
+      font-size: 13px;
       color: var(--muted);
+      font-weight: 500;
     }
 
     .status-bar .conn {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .status-dot {
-      width: 8px; height: 8px;
+      width: 10px; height: 10px;
       border-radius: 50%;
       background: var(--muted);
     }
 
-    .status-dot.ok { background: var(--accent); }
+    .status-dot.ok { background: #4caf50; }
     .status-dot.err { background: var(--danger); }
 
     /* CARDS GRID */
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
     }
 
     .card {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
       overflow: hidden;
-      transition: border-color 0.3s;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
     .card.blocked {
       border-color: var(--danger);
-      box-shadow: 0 0 20px rgba(255, 69, 96, 0.1);
+      box-shadow: 0 0 20px rgba(211, 47, 47, 0.15);
+      background: rgba(211, 47, 47, 0.02);
     }
 
     .card-header {
-      padding: 16px 20px;
+      padding: 20px 24px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -216,55 +235,56 @@
     }
 
     .card-title {
-      font-family: 'Syne', sans-serif;
+      font-family: 'Poppins', sans-serif;
       font-weight: 700;
-      font-size: 15px;
+      font-size: 18px;
     }
 
     .card-subtitle {
-      font-size: 10px;
+      font-size: 12px;
       color: var(--muted);
-      margin-top: 2px;
+      margin-top: 4px;
       letter-spacing: 0.05em;
     }
 
     .status-pill {
-      font-size: 9px;
-      letter-spacing: 0.15em;
+      font-size: 11px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 2px;
+      padding: 6px 14px;
+      border-radius: 6px;
       font-weight: 700;
     }
 
     .status-pill.online {
-      background: var(--accent-dim);
-      color: var(--accent);
-      border: 1px solid rgba(0,229,160,0.3);
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid rgba(46, 125, 50, 0.2);
     }
 
     .status-pill.offline {
-      background: var(--danger-dim);
+      background: #ffebee;
       color: var(--danger);
-      border: 1px solid rgba(255,69,96,0.3);
+      border: 1px solid rgba(211, 47, 47, 0.2);
       animation: blink 1.5s infinite;
     }
 
     @keyframes blink {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.6; }
     }
 
     .card-body {
-      padding: 16px 20px;
+      padding: 20px 24px;
     }
 
     .timer-display {
-      font-size: 11px;
+      font-size: 13px;
       color: var(--warn);
-      margin-bottom: 12px;
-      min-height: 16px;
+      margin-bottom: 16px;
+      min-height: 18px;
       letter-spacing: 0.05em;
+      font-weight: 500;
     }
 
     .timer-display:empty { display: none; }
@@ -272,30 +292,32 @@
     .btn-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 12px;
     }
 
     .btn-block {
       background: transparent;
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       color: var(--text);
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
       font-weight: 700;
-      padding: 10px 8px;
+      padding: 14px 12px;
       cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.15s;
+      border-radius: 8px;
+      transition: all 0.25s;
       letter-spacing: 0.05em;
     }
 
     .btn-block:hover {
-      background: var(--danger-dim);
+      background: #ffebee;
       border-color: var(--danger);
       color: var(--danger);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(211, 47, 47, 0.15);
     }
 
-    .btn-block:active { transform: scale(0.97); }
+    .btn-block:active { transform: scale(0.98); }
 
     .btn-block.btn-5:hover { }
     .btn-block.btn-15:hover { }
@@ -303,48 +325,61 @@
     .btn-unblock {
       grid-column: 1 / -1;
       background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      padding: 8px;
+      border: 2px solid var(--border);
+      color: var(--text);
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 14px;
       cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.15s;
+      border-radius: 8px;
+      transition: all 0.25s;
       letter-spacing: 0.05em;
     }
 
     .btn-unblock:hover {
-      background: var(--accent-dim);
-      border-color: var(--accent);
-      color: var(--accent);
+      background: #e8f5e9;
+      border-color: #4caf50;
+      color: #2e7d32;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
     }
 
     /* TOAST */
     #toast-container {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 30px;
+      right: 30px;
       z-index: 999;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
     }
 
     .toast {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       color: var(--text);
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      padding: 12px 16px;
-      border-radius: 6px;
-      max-width: 300px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 14px 18px;
+      border-radius: 8px;
+      max-width: 320px;
       animation: slideIn 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    .toast.success { border-color: var(--accent); color: var(--accent); }
-    .toast.error { border-color: var(--danger); color: var(--danger); }
+    .toast.success { 
+      border-color: #4caf50; 
+      color: #2e7d32;
+      background: #f1f8f6;
+    }
+    .toast.error { 
+      border-color: var(--danger); 
+      color: var(--danger);
+      background: #fdf5f5;
+    }
 
     @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }
@@ -366,12 +401,14 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: rgba(10,10,15,0.5);
-      border-radius: 8px;
+      background: rgba(248, 249, 250, 0.5);
+      border-radius: 12px;
     }
 
     @media (max-width: 480px) {
       .cards-grid { grid-template-columns: 1fr; }
+      .container { padding: 30px 16px; }
+      .key-input, .login-btn { width: 100%; }
     }
   </style>
 </head>
@@ -380,7 +417,7 @@
 <div class="container">
   <header>
     <div class="badge">Network Admin Panel</div>
-    <h1>KONTROL <span>INTERNET</span><br>SEKOLAH</h1>
+    <h1>KONTROL <span>INTERNET</span><br>KODEIN</h1>
     <p class="subtitle">Mikrotik RouterOS v7 · REST API</p>
   </header>
 
@@ -423,15 +460,28 @@
     if (e.key === "Enter") doLogin();
   });
 
-  function doLogin() {
+  async function doLogin() {
     const val = document.getElementById("admin-key-input").value.trim();
     if (!val) { showToast("Masukkan admin key dulu", "error"); return; }
     adminKey = val;
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-    buildCards();
-    refreshStatus();
-    statusInterval = setInterval(refreshStatus, 10000);
+    
+    // Validasi admin key ke backend
+    try {
+      const data = await apiCall("status");
+      
+      if (!data.success) {
+        showToast("Admin key salah atau tidak sesuai", "error");
+        return;
+      }
+      
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      buildCards();
+      refreshStatus();
+      statusInterval = setInterval(refreshStatus, 10000);
+    } catch (e) {
+      showToast("Gagal memverifikasi admin key", "error");
+    }
   }
 
   // ─── BUILD CARDS ──────────────────────────────────────────
