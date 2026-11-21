@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Dashboard kontrol internet sekolah via Mikrotik REST API",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=18"
   }

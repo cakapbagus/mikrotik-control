@@ -496,10 +496,19 @@
     
     // Validasi admin key ke backend
     try {
-      const data = await apiCall("status");
+      const response = await apiRequest("status");
+      if (response.status === 401) {
+        showToast("Admin key salah atau tidak sesuai", "error");
+        return;
+      }
+      if (!response.ok) {
+        showToast(`Server gagal memuat status MikroTik (HTTP ${response.status})`, "error");
+        return;
+      }
+      const data = await response.json();
       
       if (!data.success) {
-        showToast("Admin key salah atau tidak sesuai", "error");
+        showToast("Server gagal memuat status MikroTik", "error");
         return;
       }
       
@@ -509,7 +518,7 @@
       refreshStatus();
       statusInterval = setInterval(refreshStatus, 10000);
     } catch (e) {
-      showToast("Gagal memverifikasi admin key", "error");
+      showToast("Gagal terhubung ke server atau membaca responsnya", "error");
     }
   }
 
@@ -556,7 +565,7 @@
   }
 
   // ─── API CALLS ────────────────────────────────────────────
-  async function apiCall(endpoint, method = "GET", body = null) {
+  function apiRequest(endpoint, method = "GET", body = null) {
     const opts = {
       method,
       headers: {
@@ -565,7 +574,11 @@
       },
     };
     if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(`/api/${endpoint}`, opts);
+    return fetch(`/api/${endpoint}`, opts);
+  }
+
+  async function apiCall(endpoint, method = "GET", body = null) {
+    const res = await apiRequest(endpoint, method, body);
     return res.json();
   }
 
