@@ -1,28 +1,4 @@
-// api/unblock.js - Batalkan blokir internet secara manual
-
-const MIKROTIK_IP = process.env.MIKROTIK_IP || "38.225.121.13";
-const MIKROTIK_PORT = process.env.MIKROTIK_PORT || "8080";
-const MIKROTIK_USER = process.env.MIKROTIK_USER || "admin";
-const MIKROTIK_PASS = process.env.MIKROTIK_PASS || "";
-
-const BASE_URL = `http://${MIKROTIK_IP}:${MIKROTIK_PORT}/rest`;
-
-async function mikrotikRequest(path, method = "GET", body = null) {
-  const credentials = Buffer.from(`${MIKROTIK_USER}:${MIKROTIK_PASS}`).toString("base64");
-  const options = {
-    method,
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/json",
-    },
-  };
-  if (body) options.body = JSON.stringify(body);
-
-  const res = await fetch(`${BASE_URL}${path}`, options);
-  if (!res.ok) throw new Error(`Mikrotik error ${res.status}`);
-  const text = await res.text();
-  return text ? JSON.parse(text) : {};
-}
+import { findRule, firewall, lists, request, scheduler } from "../mikrotik.mjs";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -31,28 +7,21 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const adminKey = req.headers["x-admin-key"];
-  if (process.env.ADMIN_KEY && adminKey !== process.env.ADMIN_KEY) {
+  if (process.env.ADMIN_KEY && req.headers["x-admin-key"] !== process.env.ADMIN_KEY) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { addressList } = req.body;
-  const validLists = ["ALL-SISWA", "ALL-SISWA-10", "ALL-SISWA-11", "ALL-SISWA-12"];
-
-  if (!validLists.includes(addressList)) {
+  const { addressList } = req.body ?? {};
+  if (!lists.includes(addressList)) {
     return res.status(400).json({ error: "Address list tidak valid" });
   }
 
   try {
-    const rules = await mikrotikRequest("/ip/firewall/filter");
-    const rule = rules.find(
-      (r) => r.comment === `BLOCK-${addressList}` && r["src-address-list"] === addressList
-    );
-
-    if (rule) {
-      await mikrotikRequest(`/ip/firewall/filter/${rule[".id"]}`, "DELETE");
-    }
+    const [rules, schedules] = await Promise.all([request(firewall), request(scheduler)]);
+    const rule = findRule(rules, addressList);
+    const schedule = schedules.find((item) => item.name === `UNBLOCK-${addressList}`);
+    if (rule) await request(`${firewall}/${rule[".id"]}`, "DELETE");
+    if (schedule) await request(`${scheduler}/${schedule[".id"]}`, "DELETE");
 
     return res.status(200).json({ success: true, message: `${addressList} sudah dinyalakan kembali` });
   } catch (err) {

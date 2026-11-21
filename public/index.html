@@ -319,6 +319,35 @@
 
     .btn-block:active { transform: scale(0.98); }
 
+    .schedule-control { grid-column: 1 / -1; }
+
+    .schedule-control summary {
+      cursor: pointer;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .schedule-control form {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .schedule-control label { font-size: 13px; }
+
+    .schedule-control input {
+      width: 100%;
+      min-width: 0;
+      min-height: 44px;
+      padding: 8px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+    }
+
     .btn-block.btn-5:hover { }
     .btn-block.btn-15:hover { }
 
@@ -509,6 +538,14 @@
               <button class="btn-block btn-15" onclick="blockInternet('${id}', 900)">
                 ⏸ MATIKAN 15 MENIT
               </button>
+              <details class="schedule-control">
+                <summary>Matikan sampai…</summary>
+                <form onsubmit="event.preventDefault(); blockInternet('${id}', undefined, this.elements.until.value)">
+                  <label for="until-${safeId}">Tanggal dan jam nyala kembali (WIB)</label>
+                  <input id="until-${safeId}" name="until" type="datetime-local" required>
+                  <button class="btn-block" type="submit">Matikan sekarang</button>
+                </form>
+              </details>
               <button class="btn-unblock" onclick="unblockInternet('${id}')">
                 ▶ NYALAKAN KEMBALI
               </button>
@@ -532,14 +569,20 @@
     return res.json();
   }
 
-  async function blockInternet(addressList, duration) {
+  const wibFormatter = new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta",
+  });
+
+  async function blockInternet(addressList, duration, until) {
     const safeId = addressList.replace(/[^a-z0-9]/gi, "_");
     const card = document.getElementById(`card-${safeId}`);
+    if (card.classList.contains("loading")) return;
     card.classList.add("loading");
 
     try {
-      const data = await apiCall("block", "POST", { addressList, duration });
+      const data = await apiCall("block", "POST", { addressList, duration, until });
       if (data.success) {
+        card.querySelector("details").open = false;
         showToast(`✓ ${data.message}`, "success");
         refreshStatus();
       } else {
@@ -555,6 +598,7 @@
   async function unblockInternet(addressList) {
     const safeId = addressList.replace(/[^a-z0-9]/gi, "_");
     const card = document.getElementById(`card-${safeId}`);
+    if (card.classList.contains("loading")) return;
     card.classList.add("loading");
 
     try {
@@ -595,7 +639,9 @@
             card.classList.add("blocked");
             pill.className = "status-pill offline";
             pill.textContent = "OFFLINE";
-            timer.textContent = s.timeoutRemaining
+            timer.textContent = s.unblockAt && Date.parse(s.unblockAt) > Date.now()
+              ? `Nyala kembali ${wibFormatter.format(new Date(s.unblockAt))} WIB`
+              : s.timeoutRemaining
               ? `⏱ Sisa: ${formatTimeout(s.timeoutRemaining)}`
               : "⏱ Sedang diblokir";
           } else {

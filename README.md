@@ -9,9 +9,9 @@ Dashboard web untuk memblokir internet per address-list di Mikrotik RouterOS v7 
 ```
 mikrotik-control/
 ├── api/
-│   ├── block.js       ← Blokir internet (5 atau 15 menit)
+│   ├── block.js       ← Blokir internet dengan timer
 │   ├── unblock.js     ← Batalkan blokir manual
-│   └── status.js      ← Cek status blokir aktif
+│   └── status.js      ← Cek status blokir dan jadwal nyala kembali
 ├── public/
 │   └── index.html     ← Dashboard UI
 ├── package.json
@@ -82,20 +82,11 @@ Masukkan **Admin Key** yang sudah diset di environment variable.
 
 ## ⚙️ Cara Kerja
 
-1. Browser → Vercel Serverless Function (api/block.js)
-2. Serverless Function → Mikrotik REST API (`/rest/ip/firewall/filter/add`)
-3. Mikrotik menambahkan rule DROP dengan timeout otomatis
-4. Setelah timeout habis, rule terhapus sendiri → internet nyala kembali
+1. Pilih kelompok siswa, lalu tekan **Matikan 5 menit**, **Matikan 15 menit**, atau **Matikan sampai…** dan isi tanggal serta jam dalam WIB.
+2. Internet langsung diblokir. MikroTik menyimpan tanggal dan jam berakhirnya blokir di Scheduler dan menghapus rule blokir saat jadwal tiba.
+3. Pilih timer baru untuk mengganti jadwal saat internet masih diblokir. Tekan **Nyalakan kembali** untuk menghapus blokir dan jadwalnya lebih awal.
 
-Rule yang ditambahkan di Mikrotik:
-```
-/ip firewall filter add \
-  chain=forward \
-  action=drop \
-  src-address-list=ALL-SISWA \
-  timeout=00:05:00 \
-  comment=BLOCK-ALL-SISWA
-```
+Dashboard menampilkan jadwal nyala kembali dalam WIB, termasuk setelah halaman dimuat ulang. Pastikan jam dan zona waktu router akurat agar jadwal berjalan sesuai waktu yang dipilih.
 
 ---
 

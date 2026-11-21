@@ -1,117 +1,9 @@
-// api/block.js - Vercel Serverless Function
-// Proxy ke Mikrotik REST API (RouterOS v7)
+import { clockOffset, findRule, firewall, isoDate, lists, request, routerDate, scheduler } from "../mikrotik.mjs";
 
-const MIKROTIK_IP = process.env.MIKROTIK_IP || "38.225.121.13";
-const MIKROTIK_PORT = process.env.MIKROTIK_PORT || "8080";
-const MIKROTIK_USER = process.env.MIKROTIK_USER || "admin";
-const MIKROTIK_PASS = process.env.MIKROTIK_PASS || "";
-
-const BASE_URL = `http://${MIKROTIK_IP}:${MIKROTIK_PORT}/rest`;
-
-async function mikrotikRequest(path, method = "GET", body = null) {
-  const credentials = Buffer.from(`${MIKROTIK_USER}:${MIKROTIK_PASS}`).toString("base64");
-  const options = {
-    method,
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/json",
-    },
-  };
-  if (body) options.body = JSON.stringify(body);
-
-  const res = await fetch(`${BASE_URL}${path}`, options);
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Mikrotik error ${res.status}: ${text}`);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : {};
-}
-
-async function deleteIfExists(endpoint, nameField, nameValue) {
-  try {
-    const items = await mikrotikRequest(endpoint);
-    const arr = Array.isArray(items) ? items : Object.values(items);
-    const found = arr.find((x) => x[nameField] === nameValue);
-    if (found) {
-      await mikrotikRequest(`${endpoint}/${found[".id"]}`, "DELETE");
-    }
-  } catch (e) {
-    console.log(`Skip delete ${nameValue}:`, e.message);
-  }
-}
-
-// Ambil waktu saat ini dari Mikrotik
-async function getMikrotikTime() {
-  const clock = await mikrotikRequest("/system/clock");
-  return clock.time; // format: "HH:MM:SS"
-}
-
-// Tambah detik ke waktu HH:MM:SS
-function addSeconds(timeStr, seconds) {
-  const [h, m, s] = timeStr.split(":").map(Number);
-  const total = h * 3600 + m * 60 + s + seconds;
-  const rh = Math.floor(total / 3600) % 24;
-  const rm = Math.floor((total % 3600) / 60);
-  const rs = total % 60;
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${pad(rh)}:${pad(rm)}:${pad(rs)}`;
-}
-
-async function addBlockRule(addressList, durationSeconds) {
-  const minutes = Math.floor(durationSeconds / 60);
-  const comment = `BLOCK-${addressList}`;
-  const schedName = `UNBLOCK-${addressList}`;
-
-  // 1. Hapus rule lama
-  await deleteIfExists("/ip/firewall/filter", "comment", comment);
-
-  // 2. Hapus scheduler lama
-  await deleteIfExists("/system/scheduler", "name", schedName);
-
-  // 3. Tambah rule DROP
-  const newRule = await mikrotikRequest("/ip/firewall/filter/add", "POST", {
-    chain: "forward",
-    action: "drop",
-    "src-address-list": addressList,
-    comment: comment,
-    disabled: "false",
-  });
-
-  // 4. Pindahkan rule ke posisi paling atas (index 0)
-  // newRule mengandung .id dari rule yang baru dibuat
-  try {
-    const ruleId = typeof newRule === "object" ? newRule[".id"] ?? newRule.id ?? newRule.ret : newRule;
-    if (ruleId) {
-      await mikrotikRequest("/ip/firewall/filter/move", "POST", {
-        ".id": ruleId,
-        destination: "0",
-      });
-    }
-  } catch (e) {
-    console.log("Gagal move rule ke atas:", e.message);
-    // Lanjut meski gagal move, rule tetap aktif
-  }
-
-  // 5. Ambil waktu Mikrotik sekarang, hitung waktu unblock
-  const currentTime = await getMikrotikTime();
-  const startTime = addSeconds(currentTime, durationSeconds);
-
-  // 6. Buat scheduler: jalankan SEKALI pada jam startTime
-  const unblockScript =
-    `/ip firewall filter remove [find comment="${comment}"]` +
-    `\n/system scheduler remove [find name="${schedName}"]`;
-
-  await mikrotikRequest("/system/scheduler/add", "POST", {
-    name: schedName,
-    "start-time": startTime,
-    interval: "00:00:00", // 0 = tidak repeat
-    "on-event": unblockScript,
-    policy: "read,write,policy,test",
-  });
-
-  return { success: true, addressList, minutes, unblockAt: startTime };
-}
+const wibOffset = 7 * 60 * 60 * 1000;
+const wibFormatter = new Intl.DateTimeFormat("id-ID", {
+  dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta",
+});
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -120,33 +12,96 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const adminKey = req.headers["x-admin-key"];
-  if (process.env.ADMIN_KEY && adminKey !== process.env.ADMIN_KEY) {
+  if (process.env.ADMIN_KEY && req.headers["x-admin-key"] !== process.env.ADMIN_KEY) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { addressList, duration } = req.body;
-
-  const validLists = ["ALL-SISWA", "ALL-SISWA-10", "ALL-SISWA-11", "ALL-SISWA-12"];
-  const validDurations = [300, 900];
-
-  if (!validLists.includes(addressList)) {
+  const { addressList, duration, until } = req.body ?? {};
+  if (!lists.includes(addressList)) {
     return res.status(400).json({ error: "Address list tidak valid" });
   }
-  if (!validDurations.includes(duration)) {
-    return res.status(400).json({ error: "Durasi tidak valid" });
+
+  let deadline;
+  if (until === undefined) {
+    if (![300, 900].includes(duration)) {
+      return res.status(400).json({ error: "Durasi tidak valid" });
+    }
+  } else {
+    const local = typeof until === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(until)
+      ? Date.parse(`${until}:00Z`)
+      : NaN;
+    if (duration !== undefined || !Number.isFinite(local) || new Date(local).toISOString().slice(0, 16) !== until) {
+      return res.status(400).json({ error: "Tanggal dan jam WIB tidak valid" });
+    }
+    deadline = local - wibOffset;
+    if (deadline <= Date.now()) {
+      return res.status(400).json({ error: "Pilih tanggal dan jam WIB yang akan datang" });
+    }
   }
 
+  let stagedRule;
   try {
-    const result = await addBlockRule(addressList, duration);
+    const [clock, rules, schedules] = await Promise.all([
+      request("/system/clock"), request(firewall), request(scheduler),
+    ]);
+    const offset = clockOffset(clock);
+    const clockTime = Date.parse(`${isoDate(clock.date)}T${clock.time}Z`) - offset;
+    if (!Number.isFinite(clockTime)) throw new Error("Tanggal dan jam MikroTik tidak terbaca");
+
+    const target = deadline ?? clockTime + duration * 1000;
+    if (target <= clockTime || (deadline !== undefined && deadline <= Date.now())) {
+      return res.status(400).json({ error: "Waktu yang dipilih sudah lewat" });
+    }
+
+    const [date, time] = new Date(target + offset).toISOString().slice(0, 19).split("T");
+    const comment = `BLOCK-${addressList}`;
+    const name = `UNBLOCK-${addressList}`;
+    const schedule = schedules.find((item) => item.name === name);
+    const rule = findRule(rules, addressList);
+
+    if (!rule) {
+      const created = await request(firewall, "PUT", {
+        chain: "forward", action: "drop", "src-address-list": addressList, comment, disabled: "true",
+      });
+      stagedRule = created[".id"];
+      if (!stagedRule) throw new Error("ID rule MikroTik tidak diterima");
+      if (rules.length) {
+        await request(`${firewall}/move`, "POST", { ".id": stagedRule, destination: "0" });
+      }
+    }
+
+    const settings = {
+      name,
+      "start-date": routerDate(date, clock),
+      "start-time": time,
+      interval: "00:00:00",
+      disabled: "false",
+      "on-event": `/ip firewall filter remove [find comment="${comment}" src-address-list="${addressList}"]\n/system scheduler remove [find name="${name}"]`,
+      policy: "read,write,policy,test",
+    };
+    if (schedule) {
+      await request(`${scheduler}/${schedule[".id"]}`, "PATCH", settings);
+    } else {
+      await request(scheduler, "PUT", settings);
+    }
+
+    if (stagedRule || rule?.disabled === "true") {
+      await request(`${firewall}/${stagedRule || rule[".id"]}`, "PATCH", { disabled: "false" });
+      stagedRule = undefined;
+    }
+
     return res.status(200).json({
       success: true,
-      message: `Internet ${addressList} dimatikan selama ${result.minutes} menit (aktif sampai ${result.unblockAt})`,
-      ...result,
+      addressList,
+      ...(duration !== undefined && { minutes: duration / 60 }),
+      unblockAt: time,
+      unblockAtIso: new Date(target).toISOString(),
+      message: `Internet ${addressList} dimatikan sampai ${wibFormatter.format(target)} WIB`,
     });
   } catch (err) {
-    console.error("Mikrotik error:", err);
+    if (stagedRule) {
+      await request(`${firewall}/${stagedRule}`, "DELETE").catch(console.error);
+    }
     return res.status(500).json({ error: err.message });
   }
 }
