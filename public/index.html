@@ -524,6 +524,7 @@
 
   // ─── BUILD CARDS ──────────────────────────────────────────
   function buildCards() {
+    const minimum = nextMinuteWib();
     const grid = document.getElementById("cards-grid");
     grid.innerHTML = "";
 
@@ -549,9 +550,9 @@
               </button>
               <details class="schedule-control">
                 <summary>Matikan sampai…</summary>
-                <form onsubmit="event.preventDefault(); blockInternet('${id}', undefined, this.elements.until.value)">
+                <form onsubmit="event.preventDefault(); submitSchedule('${id}', this.elements.until)">
                   <label for="until-${safeId}">Tanggal dan jam nyala kembali (WIB)</label>
-                  <input id="until-${safeId}" name="until" type="datetime-local" required>
+                  <input id="until-${safeId}" name="until" type="datetime-local" min="${minimum}" onfocus="this.min = nextMinuteWib()" required>
                   <button class="btn-block" type="submit">Matikan sekarang</button>
                 </form>
               </details>
@@ -585,6 +586,17 @@
   const wibFormatter = new Intl.DateTimeFormat("id-ID", {
     dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta",
   });
+
+  function nextMinuteWib() {
+    const nextMinute = (Math.floor(Date.now() / 60000) + 1) * 60000;
+    const wibOffset = 7 * 60 * 60000;
+    return new Date(nextMinute + wibOffset).toISOString().slice(0, 16);
+  }
+
+  function submitSchedule(addressList, input) {
+    input.min = nextMinuteWib();
+    if (input.reportValidity()) blockInternet(addressList, undefined, input.value);
+  }
 
   async function blockInternet(addressList, duration, until) {
     const safeId = addressList.replace(/[^a-z0-9]/gi, "_");
