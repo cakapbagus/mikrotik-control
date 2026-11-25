@@ -374,6 +374,39 @@
       box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
     }
 
+    /* LOGIN CLOCK */
+    #login-clock {
+      position: fixed;
+      bottom: 20px;
+      right: 24px;
+      z-index: 2;
+      text-align: right;
+      color: var(--muted);
+      font-family: 'Poppins', sans-serif;
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    #login-clock .clock-time {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    #login-clock .clock-date {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      margin-top: 2px;
+    }
+
+    @media (max-width: 480px) {
+      #login-clock .clock-time { font-size: 22px; }
+    }
+
     /* TOAST */
     #toast-container {
       position: fixed;
@@ -457,6 +490,12 @@
     <button class="login-btn" onclick="doLogin()">MASUK →</button>
   </div>
 
+  <!-- LOGIN CLOCK -->
+  <div id="login-clock">
+    <div class="clock-time" id="clock-time">--:--:--</div>
+    <div class="clock-date" id="clock-date">—</div>
+  </div>
+
   <!-- DASHBOARD -->
   <div id="dashboard">
     <div class="status-bar">
@@ -483,6 +522,24 @@
 
   let adminKey = "";
   let statusInterval = null;
+
+  // ─── LOGIN CLOCK (localtime) ──────────────────────────────
+  const clockTimeFmt = new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
+  const clockDateFmt = new Intl.DateTimeFormat(undefined, {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+
+  function updateLoginClock() {
+    const now = new Date();
+    const timeEl = document.getElementById("clock-time");
+    const dateEl = document.getElementById("clock-date");
+    if (timeEl) timeEl.textContent = clockTimeFmt.format(now);
+    if (dateEl) dateEl.textContent = clockDateFmt.format(now);
+  }
+  updateLoginClock();
+  setInterval(updateLoginClock, 1000);
 
   // ─── LOGIN ────────────────────────────────────────────────
   document.getElementById("admin-key-input").addEventListener("keydown", (e) => {
@@ -513,6 +570,7 @@
       }
       
       document.getElementById("login-screen").style.display = "none";
+      document.getElementById("login-clock").style.display = "none";
       document.getElementById("dashboard").style.display = "block";
       buildCards();
       refreshStatus();
